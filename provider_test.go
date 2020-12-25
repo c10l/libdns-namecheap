@@ -8,13 +8,16 @@ import (
 	"github.com/libdns/libdns"
 )
 
-var provider = Provider{
-	APIKey:  os.Getenv("NAMECHEAP_API_KEY"),
-	APIUser: os.Getenv("NAMECHEAP_API_USER"),
-	Sandbox: true,
+func ProviderFactory() Provider {
+	return Provider{
+		APIKey:  os.Getenv("NAMECHEAP_API_KEY"),
+		APIUser: os.Getenv("NAMECHEAP_API_USER"),
+		Sandbox: true,
+	}
 }
 
 func TestProvider_GetRecordsDomainNotFound(t *testing.T) {
+	provider := ProviderFactory()
 	zone := "notfound.com"
 
 	hosts, err := provider.GetRecords(context.TODO(), zone)
@@ -27,6 +30,7 @@ func TestProvider_GetRecordsDomainNotFound(t *testing.T) {
 }
 
 func TestProvider_GetRecords(t *testing.T) {
+	provider := ProviderFactory()
 	zone := "gethosts-0.com"
 
 	// Ensure we actually have 0 hosts
@@ -42,6 +46,7 @@ func TestProvider_GetRecords(t *testing.T) {
 }
 
 func TestProvider_SetRecords(t *testing.T) {
+	provider := ProviderFactory()
 	_, err := provider.SetRecords(context.TODO(), "foo", []libdns.Record{})
 	if err.Error() != "not implemented" {
 		t.Error(err)

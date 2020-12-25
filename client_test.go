@@ -8,6 +8,7 @@ import (
 )
 
 func TestProvider_setHosts(t *testing.T) {
+	provider := ProviderFactory()
 	sld := "sethosts"
 	tld := "com"
 
