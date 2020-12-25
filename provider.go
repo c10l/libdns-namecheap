@@ -2,6 +2,7 @@ package namecheap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -19,27 +20,23 @@ type Provider struct {
 	http.Client
 }
 
-func convertZoneToAPIGetHostsRequest(zone string) (*APIGetHostsRequest, error) {
+func convertZoneToSLDAndTLD(zone string) (string, string, error) {
 	splitZone := strings.Split(zone, ".")
 	if len(splitZone) != 2 {
-		return nil, fmt.Errorf("Bad zone: %s. Should be in the format <sld>.<tld>. e.g.: example.com", zone)
+		return "", "", fmt.Errorf("Bad zone: %s. Should be in the format <sld>.<tld>. e.g.: example.com", zone)
 	}
 
-	req := APIGetHostsRequest{
-		SLD: splitZone[0],
-		TLD: splitZone[1],
-	}
-	return &req, nil
+	return splitZone[0], splitZone[1], nil
 }
 
 // GetRecords lists all the records in the zone.
 func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
-	getHostsRequest, err := convertZoneToAPIGetHostsRequest(zone)
+	sld, tld, err := convertZoneToSLDAndTLD(zone)
 	if err != nil {
 		return nil, err
 	}
 
-	records, err := p.getHosts(ctx, *getHostsRequest)
+	records, err := p.getHosts(ctx, APIGetHostsRequest{SLD: sld, TLD: tld})
 	if err != nil {
 		return nil, err
 	}
@@ -92,24 +89,9 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 
 // SetRecords sets the records in the zone, either by updating existing records
 // or creating new ones. It returns the updated records.
+// NOTE: Not implemented
 func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	var updatedRecords []libdns.Record
-
-	// zoneID, err := p.getZoneID(ctx, zone)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// for _, record := range records {
-	// 	updatedRecord, err := p.updateRecord(ctx, zoneID, record)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	updatedRecord.TTL = time.Duration(updatedRecord.TTL) * time.Second
-	// 	updatedRecords = append(updatedRecords, updatedRecord)
-	// }
-
-	return updatedRecords, nil
+	return nil, errors.New("not implemented")
 }
 
 // Interface guards

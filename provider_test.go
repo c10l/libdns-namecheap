@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 	"testing"
+
+	"github.com/libdns/libdns"
 )
 
 var provider = Provider{
@@ -36,5 +38,12 @@ func TestProvider_GetRecords(t *testing.T) {
 	}
 	if len(hosts) > 0 {
 		t.Errorf("Expected 0 hosts, got %d: %+v", len(hosts), hosts)
+	}
+}
+
+func TestProvider_SetRecords(t *testing.T) {
+	_, err := provider.SetRecords(context.TODO(), "foo", []libdns.Record{})
+	if err.Error() != "not implemented" {
+		t.Error(err)
 	}
 }
