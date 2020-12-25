@@ -4,44 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"os"
 	"testing"
 )
-
-var provider = Provider{
-	APIKey:  os.Getenv("NAMECHEAP_API_KEY"),
-	APIUser: os.Getenv("NAMECHEAP_API_USER"),
-	Sandbox: true,
-}
-
-func TestProvider_getHostsNotFound(t *testing.T) {
-	sld := "notfound"
-	tld := "com"
-
-	hosts, err := provider.getHosts(context.TODO(), APIGetHostsRequest{SLD: sld, TLD: tld})
-	if err.Error() != fmt.Sprintf("{SLD:%s TLD:%s} [Domain name not found]", sld, tld) {
-		t.Error(err)
-	}
-	if len(hosts) > 0 {
-		t.Errorf("Expected 0 hosts, got %d: %+v", len(hosts), hosts)
-	}
-}
-
-func TestProvider_getHosts(t *testing.T) {
-	sld := "gethosts-0"
-	tld := "com"
-
-	// Ensure we actually have 0 hosts
-	provider.setHosts(context.TODO(), APISetHostsRequest{SLD: sld, TLD: tld})
-
-	hosts, err := provider.getHosts(context.TODO(), APIGetHostsRequest{SLD: sld, TLD: tld})
-	if err != nil {
-		t.Error(err)
-	}
-	if len(hosts) > 0 {
-		t.Errorf("Expected 0 hosts, got %d: %+v", len(hosts), hosts)
-	}
-}
 
 func TestProvider_setHosts(t *testing.T) {
 	sld := "sethosts"
