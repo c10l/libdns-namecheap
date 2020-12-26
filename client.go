@@ -20,12 +20,9 @@ type APIGetHostsRequest struct {
 }
 
 type APISetHostsRequest struct {
-	SLD       string
-	TLD       string
-	EmailType string
-	Flag      string
-	Tag       string
-	Hosts     []APIHost
+	SLD   string
+	TLD   string
+	Hosts []APIHost
 }
 
 type APIResponse struct {
@@ -37,8 +34,8 @@ type APIResponse struct {
 }
 
 type APIError struct {
-	Message string `xml:",chardata"`
 	Number  int    `xml:"number,attr"`
+	Message string `xml:",chardata"`
 }
 
 type APICommandResponse struct {
@@ -60,6 +57,19 @@ type APISetHostsResult struct {
 	Domain    string   `xml:"Domain,attr"`
 	IsSuccess bool     `xml:"IsSuccess,attr"`
 }
+
+const APIHostTypeA = "A"
+const APIHostTypeAAAA = "AAAA"
+const APIHostTypeALIAS = "ALIAS"
+const APIHostTypeCAA = "CAA"
+const APIHostTypeCNAME = "CNAME"
+const APIHostTypeMX = "MX"
+const APIHostTypeMXE = "MXE"
+const APIHostTypeNS = "NS"
+const APIHostTypeTXT = "TXT"
+const APIHostTypeURL = "URL"
+const APIHostTypeURL301 = "URL301"
+const APIHostTypeFRAME = "FRAME"
 
 type APIHost struct {
 	XMLName xml.Name `xml:"host"`

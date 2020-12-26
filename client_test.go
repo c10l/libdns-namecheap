@@ -2,8 +2,6 @@ package namecheap
 
 import (
 	"context"
-	"fmt"
-	"math/rand"
 	"testing"
 )
 
@@ -12,23 +10,13 @@ func TestProvider_setHosts(t *testing.T) {
 	sld := "sethosts"
 	tld := "com"
 
-	host0 := APIHost{
-		Name:    fmt.Sprintf("foo%d", rand.Intn(100)),
-		Type:    "A",
-		Address: fmt.Sprintf("%d.%d.%d.%d", rand.Intn(254)+1, rand.Intn(254)+1, rand.Intn(254)+1, rand.Intn(254)+1),
-		TTL:     rand.Intn(59940) + 60,
-	}
-	host1 := APIHost{
-		Name:    fmt.Sprintf("bar%d", rand.Intn(100)),
-		Type:    "CNAME",
-		Address: "foo.test1.com",
-		TTL:     rand.Intn(59940) + 60,
-	}
+	host1 := HostFactory()
+	host0 := HostFactory()
 
 	request := APISetHostsRequest{
 		SLD:   sld,
 		TLD:   tld,
-		Hosts: []APIHost{host0, host1},
+		Hosts: []APIHost{host1, host0},
 	}
 
 	err := provider.setHosts(context.TODO(), request)
