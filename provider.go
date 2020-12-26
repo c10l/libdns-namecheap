@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/libdns/libdns"
-	"gotest.tools/assert/cmp"
 )
 
 // Provider implements the libdns interfaces for Namecheap
@@ -59,8 +58,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 	for _, newRecord := range records {
 		for _, existingRecord := range existingRecords {
 			// Return an error if trying to append an existing record
-			comp := cmp.Equal(convertLibdnsRecordToAPIHost(newRecord), convertLibdnsRecordToAPIHost(existingRecord))
-			if comp().Success() {
+			if convertLibdnsRecordToAPIHost(newRecord) == convertLibdnsRecordToAPIHost(existingRecord) {
 				return nil, fmt.Errorf("already exists: %+v", newRecord)
 			}
 		}
