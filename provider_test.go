@@ -18,7 +18,7 @@ func ProviderFactory() Provider {
 	}
 }
 
-func HostFactory() APIHost {
+func HostFactory() *APIHost {
 	validTypes := []string{
 		APIHostTypeA,
 		APIHostTypeAAAA,
@@ -43,10 +43,12 @@ func HostFactory() APIHost {
 		apiHost.Address = fmt.Sprintf("www%d.example.com", rand.Int())
 	}
 	if hostType == APIHostTypeMX {
-		apiHost.MXPref = 1
 		apiHost.Address = fmt.Sprintf("mail%d.example.com", rand.Int())
 	}
-	return apiHost
+	if hostType == APIHostTypeURL {
+		apiHost.Address = fmt.Sprintf("http://%s", apiHost.Address)
+	}
+	return &apiHost
 }
 
 func TestProvider_GetRecordsDomainNotFound(t *testing.T) {
@@ -92,7 +94,7 @@ func TestProvider_AppendRecords(t *testing.T) {
 	tld := "com"
 	zone := fmt.Sprintf("%s.%s", sld, tld)
 
-	hosts := []APIHost{HostFactory(), HostFactory()}
+	hosts := []*APIHost{HostFactory(), HostFactory()}
 	request := APISetHostsRequest{
 		SLD:   sld,
 		TLD:   tld,
@@ -126,8 +128,8 @@ func TestProvider_AppendRecords(t *testing.T) {
 	}
 
 	// Test appending 2 records
-	recordsToAppend = append(recordsToAppend, convertAPIHostToLibdnsRecord(HostFactory()))
-	recordsToAppend = append(recordsToAppend, convertAPIHostToLibdnsRecord(HostFactory()))
+	recordsToAppend = append(recordsToAppend, convertAPIHostToLibdnsRecord(*HostFactory()))
+	recordsToAppend = append(recordsToAppend, convertAPIHostToLibdnsRecord(*HostFactory()))
 	appendedRecords, err = provider.AppendRecords(context.TODO(), zone, recordsToAppend)
 	if err != nil {
 		t.Error(err)
@@ -149,5 +151,42 @@ func TestProvider_AppendRecords(t *testing.T) {
 	}
 	if matches != 2 {
 		t.Errorf("Expected 2 appendedRecords, got %d", len(appendedRecords))
+	}
+}
+
+func TestProvider_DeleteRecords(t *testing.T) {
+	provider := ProviderFactory()
+	sld := "sethosts"
+	tld := "com"
+	zone := fmt.Sprintf("%s.%s", sld, tld)
+
+	hosts := []*APIHost{HostFactory(), HostFactory()}
+	request := APISetHostsRequest{
+		SLD:   sld,
+		TLD:   tld,
+		Hosts: hosts,
+	}
+
+	// Set up test with some records
+	err := provider.setHosts(context.TODO(), request)
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = provider.DeleteRecords(context.TODO(), zone, []libdns.Record{convertAPIHostToLibdnsRecord(*HostFactory())})
+	if err == nil {
+		t.Errorf("Expected error when trying to delete inexistent record.")
+	}
+
+	expectedDeletedRecord := convertAPIHostToLibdnsRecord(*hosts[1])
+	deletedRecords, err := provider.DeleteRecords(context.TODO(), zone, []libdns.Record{expectedDeletedRecord})
+	if err != nil {
+		t.Error(err)
+	}
+	if len(deletedRecords) != 1 {
+		t.Errorf("Expected 1 deletedRecord, got %d: %+v", len(deletedRecords), deletedRecords)
+	}
+	if deletedRecords[0] != expectedDeletedRecord {
+		t.Errorf("Wrong host deleted.\nExpected: %+v\nGot      : %+v", expectedDeletedRecord, deletedRecords[0])
 	}
 }

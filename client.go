@@ -22,7 +22,7 @@ type APIGetHostsRequest struct {
 type APISetHostsRequest struct {
 	SLD   string
 	TLD   string
-	Hosts []APIHost
+	Hosts []*APIHost
 }
 
 type APIResponse struct {
@@ -46,10 +46,10 @@ type APICommandResponse struct {
 }
 
 type APIGetHostsResult struct {
-	XMLName       xml.Name  `xml:"DomainDNSGetHostsResult"`
-	Domain        string    `xml:"Domain,attr"`
-	IsUsingOurDNS bool      `xml:"IsUsingOurDNS,attr"`
-	Hosts         []APIHost `xml:"host"`
+	XMLName       xml.Name   `xml:"DomainDNSGetHostsResult"`
+	Domain        string     `xml:"Domain,attr"`
+	IsUsingOurDNS bool       `xml:"IsUsingOurDNS,attr"`
+	Hosts         []*APIHost `xml:"host"`
 }
 
 type APISetHostsResult struct {
@@ -73,11 +73,9 @@ const APIHostTypeFRAME = "FRAME"
 
 type APIHost struct {
 	XMLName xml.Name `xml:"host"`
-	HostID  int      `xml:"HostId,attr"`
 	Name    string   `xml:"Name,attr"`
 	Type    string   `xml:"Type,attr"`
 	Address string   `xml:"Address,attr"`
-	MXPref  int      `xml:"MXPref,attr"`
 	TTL     int      `xml:"TTL,attr"`
 }
 
@@ -122,6 +120,32 @@ func parseResponse(apiResponse *APIResponse, body []byte) []error {
 	return nil
 }
 
+func convertZoneToSLDAndTLD(zone string) (string, string, error) {
+	splitZone := strings.Split(zone, ".")
+	if len(splitZone) != 2 {
+		return "", "", fmt.Errorf("bad zone: %s. Should be in the format <sld>.<tld>. e.g.: example.com", zone)
+	}
+	return splitZone[0], splitZone[1], nil
+}
+
+func convertLibdnsRecordToAPIHost(record libdns.Record) *APIHost {
+	return &APIHost{
+		Type:    record.Type,
+		Name:    record.Name,
+		Address: record.Value,
+		TTL:     int(record.TTL / time.Second),
+	}
+}
+
+func convertAPIHostToLibdnsRecord(apiHost APIHost) libdns.Record {
+	return libdns.Record{
+		Type:  apiHost.Type,
+		Name:  apiHost.Name,
+		Value: apiHost.Address,
+		TTL:   time.Duration(time.Duration(apiHost.TTL) * time.Second),
+	}
+}
+
 func (p *Provider) getHosts(ctx context.Context, params APIGetHostsRequest) ([]libdns.Record, error) {
 	var records []libdns.Record
 	url := fmt.Sprintf("%s&SLD=%s&TLD=%s", p.buildURL("getHosts"), params.SLD, params.TLD)
@@ -143,7 +167,6 @@ func (p *Provider) getHosts(ctx context.Context, params APIGetHostsRequest) ([]l
 
 	for _, host := range apiResponse.CommandResponse.GetHostsResult.Hosts {
 		record := libdns.Record{
-			ID:    fmt.Sprint(host.HostID),
 			Type:  host.Type,
 			Name:  host.Name,
 			Value: host.Address,
@@ -163,9 +186,6 @@ func (p *Provider) setHosts(ctx context.Context, params APISetHostsRequest) erro
 		url = fmt.Sprintf("%s&Address%d=%s", url, i, host.Address)
 		url = fmt.Sprintf("%s&RecordType%d=%s", url, i, host.Type)
 		url = fmt.Sprintf("%s&TTL%d=%d", url, i, host.TTL)
-		if host.Type == "MX" {
-			url = fmt.Sprintf("%s&MXPref%d=%d", url, i, host.MXPref)
-		}
 	}
 
 	resp, err := http.Post(url, "", nil)

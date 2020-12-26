@@ -16,7 +16,7 @@ func TestProvider_setHosts(t *testing.T) {
 	request := APISetHostsRequest{
 		SLD:   sld,
 		TLD:   tld,
-		Hosts: []APIHost{host1, host0},
+		Hosts: []*APIHost{host1, host0},
 	}
 
 	err := provider.setHosts(context.TODO(), request)
